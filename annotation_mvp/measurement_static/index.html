@@ -1,0 +1,9 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>通透标注台</title><link rel="stylesheet" href="/style.css"></head>
+<body><header><strong>通透标注台</strong><span id="progress"></span><span id="identity"></span><button id="undo" hidden>回退上一题</button><button id="pause" hidden>暂停</button></header>
+<main><section id="welcome"><h1>准备好后，开始这一场</h1><p>答案提交后自动保存。可以随时暂停，下次继续。</p><label for="annotator">标注者代号</label><input id="annotator" maxlength="60" value="A" autocomplete="off"><button id="start">开始 / 继续</button></section>
+<section id="workspace" hidden><h1 id="question"></h1><p id="hint"></p><div id="stage"><img id="left" alt="待判断图片"><img id="right" alt="另一张待判断图片" hidden></div>
+<nav><button id="previous">← 上一张</button><button id="next">下一张 →</button></nav><p>数字键选择 · 方向键翻页 · N 写备注 · Enter 保存输入 · Esc 退出输入 / 暂停</p><div id="buttons"></div><form id="text-form" hidden><label id="text-label" for="free-text">原因（选填，不写也可以继续）</label><textarea id="free-text" maxlength="5000"></textarea><button id="text-next" type="submit">Enter 下一张（可留空）</button></form><section id="note-panel"><label for="note">备注（可选）</label><textarea id="note" maxlength="5000"></textarea><button id="save-note">保存备注</button><span id="note-status">提交答案或暂停时一并保存。</span></section></section>
+<section id="transition" hidden><h1 id="transition-title"></h1><p id="transition-message"></p><button id="transition-action">继续</button><section id="results-panel" hidden><div id="result-report"></div><h2>下载文件</h2><div id="result-downloads"></div></section></section>
+<p id="message" role="status"></p><aside id="rest" hidden>本场已超过40分钟，建议暂停休息。<button id="rest-pause">暂停休息</button><button id="rest-continue">继续本场</button></aside></main>
+<script src="/app.js"></script></body></html>

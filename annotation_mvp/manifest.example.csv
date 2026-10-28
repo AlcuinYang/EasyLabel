@@ -1,0 +1,4 @@
+path,group_id,source,split
+/absolute/path/photo001.jpg,mother001,sourceA,train
+/absolute/path/photo001_edit.jpg,mother001,sourceA,train
+/absolute/path/photo002.jpg,mother002,sourceB,test

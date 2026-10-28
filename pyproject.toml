@@ -1,0 +1,26 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "easylabel-local"
+version = "0.1.0"
+description = "Local image annotation, pairwise comparison and review tools"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = ["numpy>=1.24", "scipy>=1.10", "networkx>=3.2", "Pillow>=9.5", "matplotlib>=3.7"]
+
+[project.optional-dependencies]
+review-ai = ["openai>=1.0"]
+
+[project.scripts]
+easylabel = "annotation_mvp.measurement_app:main"
+easylabel-classify = "annotation_mvp.app:main"
+easylabel-review = "annotation_mvp.review_app:main"
+easylabel-demo = "annotation_mvp.demo:main"
+
+[tool.setuptools.packages.find]
+include = ["annotation_mvp*"]
+
+[tool.setuptools.package-data]
+annotation_mvp = ["static/*", "measurement_static/*", "manifest.example.csv"]

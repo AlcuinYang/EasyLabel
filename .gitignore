@@ -1,0 +1,22 @@
+# Local experiments and private records
+/data/
+/results/
+/batches/
+/analysis/
+/demo/
+*.sqlite*
+*.db
+*.jsonl
+*.log
+.env
+.env.*
+!.env.example
+# Python / editors
+.venv/
+__pycache__/
+*.py[cod]
+*.egg-info/
+build/
+dist/
+.pytest_cache/
+.DS_Store
