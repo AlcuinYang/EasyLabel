@@ -57,4 +57,4 @@ node --check annotation_mvp/measurement_static/app.js
 
 核心模块位于 `annotation_mvp/`，`tools/` 含合成演示和重测工具；`docs/` 保存协议和迁移边界。仅保留旧模块名，不依赖 TongTou 仓库。`.gitignore` 排除默认数据目录、日志、数据库、密钥和构建产物；放在其他目录的自有数据仍需自行避免提交。
 
-[迁移说明](docs/migration.md)。原项目的数据和历史记录保持原样，继续旧实验前应完整备份并确认路径。当前工具面向本机可信使用，绑定 127.0.0.1。
+[迁移说明](docs/migration.md)。本机旧资料已迁到 `/Volumes/ResearchData/EasyLabel-data/`，原 `TongTou/annotation_mvp` 已删除；继续历史实验前须核对绝对路径。当前工具面向本机可信使用，绑定 127.0.0.1。
