@@ -1,60 +1,82 @@
 # EasyLabel
 
-从 TongTou 独立拆出的本地图像标注台，可单独维护、测试和迭代。当前保留通透度研究的中文任务与协议；尚未改造成任意标签的通用平台。
+面向“同场景、多版本”知觉研究的多人标注服务。数据的基本单位是“场景 × 版本”，主标签来自同一场景内的比较。一个系统，三种任务模板（外加成对比较末尾的差别来源追问块）：
 
-## 安装与打开
+| 模板 | 呈现 | 作答 | 服务 |
+|---|---|---|---|
+| A 多选网格 | 同场景 6 个版本，3×2，可放大 | 多选“已达到应有的样子”或“都没有”，再挑最好的一张 | E0 |
+| B 成对比较 | 同场景两版本并排 | 左 / 差不多 / 右（或五档） | E1、E2、E4、正式采集 |
+| B+ 追问 | 重新展示本人刚判过的非平局对 | 影调 / 色彩 / 两者 / 其他 / 看不出 | 修正 #4 |
+| C 单图区域点选 | 单图叠预计算分割块 | 整图 5 档，再点 ≤ 3 块并标类型和方向 | E3 |
 
-支持 macOS / Linux，Python 3.10+（以下示例使用 3.12）。成对比较服务使用 Unix 文件锁，暂不支持原生 Windows。
+设计依据见 [docs/v1-plan.md](docs/v1-plan.md)。旧版（单人三轮协议、单图分类、候选审核）保存在 tag `legacy-v0`。
 
-```bash
-git clone https://github.com/AlcuinYang/EasyLabel.git
-cd EasyLabel
-python3.12 -m venv .venv
-source .venv/bin/activate
-python -m pip install -e .
-python -m annotation_mvp.demo
-```
+## 安装
 
-安装后，macOS 也可双击根目录 `启动标注台.command`。浏览器自动打开 http://127.0.0.1:8765 ，终端须保持运行；Ctrl+C 停止。再次运行继续演示进度。换端口：`python -m annotation_mvp.demo --port 8870`。
-
-演示自动生成 6 张合成图片和 15 个原始图对，另有 4 道隐藏质控题，保存在本仓库 `demo/`。这些是流程试用数据，不是人类研究数据；真实图片、旧标注与数据库不包含在仓库内。
-
-## 正式成对比较
+需要 Python 3.10+ 和 Node 20（仅构建前端时需要）。
 
 ```bash
-python -m annotation_mvp.measurement_app \
-  --input /absolute/path/images \
-  --results /absolute/path/experiment-results \
-  --pairs /absolute/path/pairs.csv \
-  --question "哪张更通透？" --seed 20261028 --port 8765 --open
+python -m venv .venv && source .venv/bin/activate
+pip install -e ".[dev]"
+cd web && npm ci && npm run build && cd ..     # 前端构建到 easylabel/server/static/
 ```
 
-清单格式如下。图片使用相对于 input 的路径，必须为 RGB JPEG；scene_id 表示同一场景的不同版本。单场景实验追加 `--scene-gap 0`，多场景默认两次同场景呈现间至少隔 3 题；无法满足约束会报错。
-
-```csv
-image_a,image_b,scene_id,pair_id,question_id
-scene01/v1.jpg,scene01/v2.jpg,scene01,p01,limpidity
-scene02/v1.jpg,scene02/v2.jpg,scene02,p02,limpidity
-```
-
-数字键 1/2/3 选择左/平局/右，Backspace 撤销，N 写备注，Esc 暂停。结果和图片快照写入指定 results；恢复时使用相同 input、results 和实验配置。完成后在网页分析，或用相同 input/results 追加 `--analyze`。模型分数仅在场景内可比；拟合结果不能证明通透度构念已经有效。
-
-不传 `--pairs` 可运行保留的三轮测量流程，仍须显式指定 input/results。[完整协议](docs/protocols.md)说明原因归属、重测、隐藏重复、互换一致性与导出字段。
-
-## 其他入口
-
-- 单图分类：`python -m annotation_mvp.app --data ./data/round-01 --port 8766 --open`。支持图片导入、通透/不通透/无法判断、备注、SQLite 记录和 CSV 导出。
-- 候选审核：`python -m annotation_mvp.review_app --batch /absolute/path/batch --port 8768`，随后打开 http://127.0.0.1:8768 。需自行准备原审核工具约定的清单；参数见 `--help`。可选的 DeepSeek 建议会发送图片到第三方服务，需先运行 `python -m pip install -e ".[review-ai]"`，并设置 `DEEPSEEK_API_KEY`。
-- 安装同时提供 `easylabel`、`easylabel-classify`、`easylabel-review`、`easylabel-demo` 命令。
-
-## 开发与验证
+## 先试一下
 
 ```bash
-python -m unittest discover -s annotation_mvp -t . -v
-node --check annotation_mvp/static/app.js
-node --check annotation_mvp/measurement_static/app.js
+easylabel --data ./demo-data demo     # 合成 6 个场景 × 12 版本，发布 E0 / E1 / E3 三个演示实验，打印邀请链接
+easylabel --data ./demo-data serve    # 打印管理端登录链接
 ```
 
-核心模块位于 `annotation_mvp/`，`tools/` 含合成演示和重测工具；`docs/` 保存协议和迁移边界。仅保留旧模块名，不依赖 TongTou 仓库。`.gitignore` 排除默认数据目录、日志、数据库、密钥和构建产物；放在其他目录的自有数据仍需自行避免提交。
+用浏览器打开任一邀请链接即可按评分者流程走一遍。演示图片是程序合成的，不是研究数据。
 
-[迁移说明](docs/migration.md)。本机旧资料已迁到 `/Volumes/ResearchData/EasyLabel-data/`，原 `TongTou/annotation_mvp` 已删除；继续历史实验前须核对绝对路径。当前工具面向本机可信使用，绑定 127.0.0.1。
+## 一次实验的流程
+
+1. **导入刺激**。`scenes.csv` 描述场景（基调、明暗跨度、题材、色彩强度、划分），`stimuli.csv` 描述版本（来源类型、算子、方向、强度、母版本、来源数据集与许可）。整批校验，任何一处不过就全部不写入。系统从主图统一出图：sRGB ICC、JPEG q95 4:4:4、去 EXIF、哈希命名，每个 CSS 长边各生成 1×/1.5×/2×，不放大。
+   ```bash
+   easylabel --data DATA import-stimuli --scenes scenes.csv --stimuli stimuli.csv --root SRC \
+     --css-long-edge 1024 --css-long-edge 480 [--strict-composition]
+   easylabel --data DATA derive --css-long-edge 900          # 之后补充新尺寸
+   easylabel --data DATA import-segmentation seg.csv --root SRC   # 模板 C
+   ```
+2. **写配置并创建草稿**：见带注释的 [docs/examples/experiment.yaml](docs/examples/experiment.yaml)。`easylabel --data DATA create-experiment config.yaml`（草稿可 `--replace`）。
+3. **冻结并发布**：`freeze` 计算配置哈希（含题目、派生图与分割图的哈希），之后不可改；`publish` 开放作答。也可在管理端操作。
+4. **邀请**：`easylabel --data DATA invite ID --tier lab|remote --count 20`，或在管理端生成。链接决定档位；组别按人自动均衡，也可指定。众包平台可在链接后加 `?src=…&pid=…`，评分者完成一块后显示完成码。
+5. **采集**：评分者流程为 邀请 → 知情同意 → 基本信息 → 显示检查（近黑 / 近白台阶、像素条纹、设备像素比）→ 练习（只有练习有反馈）→ 题块。服务器按块规划题目：核心集优先，再按覆盖或主动策略扩展；同一人不重复看同一对；同场景至少间隔 `scene_gap` 题；按配置插入隐藏重复、左右互换和金标题。
+6. **看进度和质控**：管理端显示场景 × 人次热图，以及每位评分者的自一致率、互换一致率、金标题正确率、反应时和显示检查结果。
+7. **导出与分析**：
+   ```bash
+   easylabel --data DATA export ID OUT/
+   python -m easylabel_analysis OUT/        # 生成 OUT-analysis.json 与 OUT-report.md
+   ```
+   导出包含长格式作答表、完整事件日志、刺激、评分者、冻结配置、按许可分组的来源 ID，以及带哈希的 `manifest.json`。排除规则只做标记，不删除数据。
+
+## 评分端的呈现约束
+
+- 固定 128 中性灰底，界面全部无彩色，没有主题切换。
+- 每张图按服务器给出的 CSS 尺寸原样绘制，并选用与设备像素比相符的文件，不做 CSS 缩放。
+- 窗口放不下、浏览器缩放改变时不显示题目。
+- 前端只拿到不透明的题目令牌，拿不到文件名、哈希或元数据。
+- 键位：数字键作答，Backspace 撤回上一题，Esc 暂停（暂停期间不计时），N 写备注。
+
+## 合成刺激（离线）
+
+```bash
+easylabel stimgen --spec docs/examples/stimgen-spec.yaml --jobs jobs.csv --root SRC --out SRC/generated
+easylabel stimgen-verify --stimuli stimuli.csv --root SRC      # 按 regen_recipe 重新生成并逐字节比对
+```
+
+各算子在 OKLab 或线性光空间实现（影调、灰罩、色度、联合、局部编辑），参数写在规格文件里。每个输出都带可复现配方，因此数据集可以只发布“标签 + 再生成脚本 + 来源 ID”。
+
+## 开发
+
+```bash
+python -m pytest -q                             # 后端与分析
+cd web && npm run typecheck && npm test         # 前端单元测试
+cd web && npm run e2e                           # Playwright 端到端（首次会生成演示数据）
+python tools/simulate.py --scenes 238 --raters 10   # 规模与采样策略模拟（已知真值）
+```
+
+目录：`easylabel/core`（数据库、导入、配置、评分者流程、导出），`easylabel/scheduler`（约束排序、块规划、策略），`easylabel/server`（FastAPI），`easylabel_analysis`（离线分析，不依赖服务），`web/`（React 前端，评分端和管理端两个入口）。
+
+部署为单进程（调度用进程内锁保证名额不超发），数据库为 SQLite（WAL）。对外服务时在前面放一个负责 HTTPS 的反向代理，并设置 `EASYLABEL_ADMIN_TOKEN`。

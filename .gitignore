@@ -20,3 +20,9 @@ build/
 dist/
 .pytest_cache/
 .DS_Store
+# Frontend
+web/node_modules/
+easylabel/server/static/
+web/.e2e-data/
+web/test-results/
+web/playwright-report/

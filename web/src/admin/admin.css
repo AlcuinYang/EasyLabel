@@ -1,0 +1,61 @@
+:root {
+  color-scheme: light;
+  --surface-0: #f4f4f2; --surface-1: #fcfcfb; --line: #e2e1dc;
+  --text-primary: #0b0b0b; --text-secondary: #52514e; --text-muted: #7a7974;
+  --accent: #2a78d6; --none: #e6e5e0;
+  --seq-1: #b7d3f6; --seq-2: #86b6ef; --seq-3: #5598e7; --seq-4: #2a78d6; --seq-done: #184f95;
+  --good: #1baf7a; --bad: #d03b3b;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    color-scheme: dark;
+    --surface-0: #121211; --surface-1: #1a1a19; --line: #2f2f2c;
+    --text-primary: #f0efec; --text-secondary: #c3c2b7; --text-muted: #8f8e86;
+    --accent: #3987e5; --none: #2a2a27;
+    --seq-1: #104281; --seq-2: #1c5cab; --seq-3: #2a78d6; --seq-4: #5598e7; --seq-done: #9ec5f4;
+    --good: #199e70; --bad: #e05a5a;
+  }
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--surface-0); color: var(--text-primary);
+  font: 14px/1.5 -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif; }
+a { color: var(--accent); text-decoration: none; }
+header { display: flex; align-items: center; gap: 16px; padding: 14px 24px; border-bottom: 1px solid var(--line); background: var(--surface-1); }
+header h1 { font-size: 16px; margin: 0; }
+main { padding: 24px; max-width: 1280px; margin: 0 auto; display: grid; gap: 20px; }
+.panel { background: var(--surface-1); border: 1px solid var(--line); border-radius: 10px; padding: 18px 20px; }
+.panel h2 { font-size: 15px; margin: 0 0 12px; }
+table { width: 100%; border-collapse: collapse; }
+th, td { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--line); vertical-align: top; }
+th { color: var(--text-secondary); font-weight: 600; font-size: 13px; }
+td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
+button { font: inherit; padding: 6px 14px; border-radius: 6px; border: 1px solid var(--line); background: var(--surface-0);
+  color: var(--text-primary); cursor: pointer; }
+button.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+button:disabled { opacity: .5; cursor: default; }
+input, select { font: inherit; padding: 5px 8px; border: 1px solid var(--line); border-radius: 6px; background: var(--surface-0); color: var(--text-primary); }
+.row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+.tabs { display: flex; gap: 4px; border-bottom: 1px solid var(--line); }
+.tabs button { border: none; border-bottom: 2px solid transparent; border-radius: 0; background: none; padding: 8px 14px; color: var(--text-secondary); }
+.tabs button.on { border-bottom-color: var(--accent); color: var(--text-primary); font-weight: 600; }
+.badge { display: inline-block; padding: 1px 8px; border-radius: 999px; font-size: 12px; border: 1px solid var(--line); color: var(--text-secondary); }
+.badge.live { border-color: var(--good); color: var(--good); }
+.muted { color: var(--text-muted); }
+.error { color: var(--bad); }
+.stats { display: flex; gap: 32px; }
+.stat strong { display: block; font-size: 22px; font-variant-numeric: tabular-nums; }
+.heat { display: grid; gap: 2px; }
+.heat .line { display: grid; grid-template-columns: 120px 1fr 120px; gap: 10px; align-items: center; }
+.heat .cells { display: flex; flex-wrap: wrap; gap: 2px; }
+.heat .cell { width: 12px; height: 12px; border-radius: 2px; }
+.legend { display: flex; gap: 14px; align-items: center; font-size: 12px; color: var(--text-secondary); }
+.legend i { display: inline-block; width: 12px; height: 12px; border-radius: 2px; margin-right: 4px; vertical-align: -2px; }
+.cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 12px; }
+.card { border: 1px solid var(--line); border-radius: 8px; padding: 12px 14px; display: grid; gap: 4px; }
+.card.excluded { border-color: var(--bad); }
+.card .kv { display: flex; justify-content: space-between; font-variant-numeric: tabular-nums; }
+.flag { color: var(--bad); font-size: 13px; }
+.preview { background: #808080; padding: 24px; border-radius: 8px; display: grid; gap: 24px; overflow-x: auto; }
+.preview .item { display: grid; gap: 8px; color: #111; }
+.preview .imgs { display: flex; gap: 16px; flex-wrap: wrap; }
+pre { background: var(--surface-0); padding: 12px; border-radius: 6px; overflow: auto; font-size: 12px; }

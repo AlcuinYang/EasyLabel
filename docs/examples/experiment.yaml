@@ -1,0 +1,58 @@
+# 实验配置：一次实验 = 一份文件。冻结后不可改；改动请换 id 新建。
+id: e1-pilot-01                 # 字母、数字、_ . -
+title: E1 预实验 · 成对比较
+template: pair                  # grid（A 多选网格）| pair（B 成对比较）| region（C 单图区域点选）
+protocol_version: "1.0"
+
+# 问题文本。单组用 question；组间设计（E2）改用 arms，系统按人均衡分组。
+question: 哪一张不同明暗、不同物体之间的差异更能被区分开？
+# arms:
+#   - {id: q_tongtou_a, question: 哪张更通透？}
+#   - {id: q_contrast,  question: 哪张的对比度看起来更高？}
+
+response_scale: 3               # 3 = 左/差不多/右；5 = 明显左/左/差不多/右/明显右
+items: lists/e1_pairs.csv       # 路径相对于本文件
+practice: lists/practice.csv    # 可选；带 expected 列的练习题会给反馈
+target_per_item: 5              # 每题目标人次
+block_size: 100                 # 每块题数（约 10–15 分钟）
+tiers: [lab, remote]
+
+display:
+  css_long_edge: 1024           # 必须已导入该尺寸的派生图（easylabel derive 可补）
+  # zoom_css_long_edge: 1440    # 网格模板点击放大的尺寸
+  allowed_dpr: [1, 1.5, 2]
+  pixel_test_required: [remote] # 哪些档位必须通过像素条纹测试
+  min_black_steps: 4            # 近黑台阶 0/3/6/9/12 至少分辨几级
+  min_white_steps: 4            # 近白台阶 243/246/249/252/255
+
+qc:
+  hidden_repeat_rate: 0.05      # 同朝向隐藏重复
+  swap_rate: 0.05               # 左右互换重复
+  gold: lists/gold.csv          # 金标题（expected = a/b）
+  gold_rate: 0.05
+  # gold_arms: [q_contrast]     # 只在这些组插入并计分；省略 = 所有组
+
+followup:                       # B+ 差别来源追问：块末重新展示本人的非平局对
+  enabled: true
+  rate: 0.2
+
+scheduler:
+  strategy: core_then_active    # coverage | core_then_coverage | core_then_active
+  scene_gap: 3                  # 同一场景两次呈现之间至少隔几题
+  reservation_minutes: 30
+  active_refit_every: 200
+
+exclusion:                      # 采集前写死；导出与分析时只标记，不删除
+  gold_accuracy_min: 0.8
+  self_consistency_min: null
+  swap_consistency_min: null
+  rt_fast_ms: 300
+  rt_fast_share_max: 0.1
+
+consent:
+  version: "2026-11-v1"
+  text: |
+    知情同意书全文……
+
+# region 模板专用：
+# region: {overall_levels: 5, max_regions: 3, low_label: 差得远, high_label: 已经到位}
