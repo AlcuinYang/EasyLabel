@@ -1,9 +1,10 @@
 import { useState } from 'react'
+import { ErrorNote, Sheet, Shell } from './Shell'
 import type { StageProps } from './types'
 
 const LABELS: Record<string, string> = {
   none: '没有', casual: '偶尔', frequent: '经常', professional: '专业 / 以此为业',
-  normal: '正常', deficient: '有色觉异常（色弱 / 色盲）', unsure: '不确定',
+  normal: '正常', deficient: '色弱或色盲', unsure: '不确定',
 }
 
 export function Profile({ state, api, run, error }: StageProps) {
@@ -17,22 +18,24 @@ export function Profile({ state, api, run, error }: StageProps) {
   ]
   const complete = fields.every(([key]) => form[key])
   return (
-    <div className="page"><div className="card">
-      <h1>基本信息</h1>
-      <p className="muted">只用于分组统计，不收集姓名或联系方式。</p>
-      {fields.map(([key, label, values]) => (
-        <label className="field" key={key}>
-          <span>{label}</span>
-          <select value={form[key] ?? ''} onChange={(e) => setForm({ ...form, [key]: e.target.value })}>
-            <option value="" disabled>请选择</option>
-            {values.map((v) => <option key={v} value={v}>{LABELS[v] ?? v}</option>)}
-          </select>
-        </label>
-      ))}
-      {error && <p className="error">{error}</p>}
-      <div className="row">
-        <button className="primary" disabled={!complete} onClick={() => run(() => api.profile(form))}>继续</button>
-      </div>
-    </div></div>
+    <Shell state={state}>
+      <Sheet eyebrow="关于你" title="基本信息" lead="只用于分组统计，不收集姓名或联系方式。">
+        {fields.map(([key, label, values]) => (
+          <fieldset className="fieldset" key={key}>
+            <legend>{label}</legend>
+            <div className="options" role="radiogroup" aria-label={label}>
+              {values.map((v) => (
+                <button key={v} type="button" role="radio" className="opt" aria-checked={form[key] === v}
+                  onClick={() => setForm({ ...form, [key]: v })}>{LABELS[v] ?? v}</button>
+              ))}
+            </div>
+          </fieldset>
+        ))}
+        <ErrorNote error={error} />
+        <div className="actions">
+          <button className="btn primary lg" disabled={!complete} onClick={() => run(() => api.profile(form))}>继续</button>
+        </div>
+      </Sheet>
+    </Shell>
   )
 }

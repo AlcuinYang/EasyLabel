@@ -48,6 +48,7 @@ export interface RaterState {
   rater: { anon_id: string }
   tier: 'lab' | 'remote'
   completion_code: string | null
+  has_practice: boolean
   consent?: { version: string; text: string }
   options?: { age_band: string[]; experience: string[]; color_vision: string[] }
   display?: { allowed_dpr: number[]; pixel_test: boolean }

@@ -32,10 +32,14 @@ export function Pair(props: TemplateProps & { ready: boolean }) {
   return (
     <>
       <PairImages {...props} />
-      <div className="answers">
-        {choices.map((c, i) => (
-          <button key={c} disabled={!enabled} onClick={() => submit({ choice: c })}><kbd>{i + 1}</kbd>{LABELS[c] ?? c}</button>
-        ))}
+      <div className="footer">
+        <div className="answers">
+          {choices.map((c, i) => (
+            <button key={c} className="answer" disabled={!enabled} onClick={() => submit({ choice: c })}>
+              {LABELS[c] ?? c}<kbd>{i + 1}</kbd>
+            </button>
+          ))}
+        </div>
       </div>
     </>
   )

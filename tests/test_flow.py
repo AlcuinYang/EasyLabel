@@ -101,7 +101,12 @@ def test_full_rater_flow(client, tmp_path):
     # Admin views.
     auth = {'Authorization': f'Bearer {ADMIN}'}
     assert c.get('/api/admin/experiments').status_code == 401
-    assert c.get('/api/admin/experiments', headers=auth).json()[0]['raters'] == 1
+    listed = c.get('/api/admin/experiments', headers=auth).json()[0]
+    assert listed['raters'] == 1 and listed['target'] == 2 and 0 < listed['done'] <= listed['items'] * 2
+    assert listed['last_activity'] is not None
+    summary = c.get(f'/api/admin/experiments/{exp_id}', headers=auth).json()['summary']
+    assert summary['raters'] == summary['raters_started'] == 1 and summary['responses'] > 0
+    assert sum(d['n'] for d in summary['daily']) == summary['responses']
     progress = c.get(f'/api/admin/experiments/{exp_id}/progress', headers=auth).json()
     assert progress['target'] == 2 and len(progress['scenes']) == 4
     cards = c.get(f'/api/admin/experiments/{exp_id}/raters', headers=auth).json()
@@ -164,3 +169,13 @@ def test_admin_invites_and_lifecycle_routes(client):
     assert len(urls) == 2 and all(u.startswith('/i/') for u in urls)
     assert c.post(f'/api/admin/experiments/{exp_id}/freeze', headers=auth).status_code == 409  # already live
     assert c.post(f'/api/admin/experiments/{exp_id}/close', headers=auth).json() == {'ok': True}
+
+
+def test_admin_session_cookie(client):
+    c, _, _ = client
+    assert c.get('/api/admin/session').status_code == 401
+    assert c.post('/api/admin/session', json={'token': 'wrong'}).status_code == 401
+    assert c.post('/api/admin/session', json={'token': ADMIN}).status_code == 200
+    assert c.get('/api/admin/session').status_code == 200
+    c.delete('/api/admin/session')
+    assert c.get('/api/admin/session').status_code == 401

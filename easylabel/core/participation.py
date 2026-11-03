@@ -183,7 +183,8 @@ def state(engine, secret, experiment_id, session_id):
 def _state(ctx):
     c, e = ctx.config, ctx.enrollment
     base = dict(experiment=dict(id=ctx.exp.id, title=c.title, template=c.template, status=ctx.exp.status),
-                rater=dict(anon_id=ctx.rater.anon_id), tier=e.tier, completion_code=e.completion_code)
+                rater=dict(anon_id=ctx.rater.anon_id), tier=e.tier, completion_code=e.completion_code,
+                has_practice=_has_practice(ctx))
     if e.consent_version != c.consent.version:
         return dict(base, stage='consent', consent=dict(version=c.consent.version, text=c.consent.text))
     if not ctx.rater.profile:

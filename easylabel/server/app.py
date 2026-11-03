@@ -4,6 +4,7 @@ import io
 import secrets
 import tempfile
 import zipfile
+from datetime import timezone
 from pathlib import Path
 
 from fastapi import Body, Depends, FastAPI, Header, HTTPException, Request
@@ -146,7 +147,26 @@ def create_app(data_dir, admin_token):
         if not secrets.compare_digest(token, admin_token):
             return _page_message('管理员令牌无效')
         resp = RedirectResponse('/admin', status_code=303)
-        resp.set_cookie('el_admin', token, httponly=True, samesite='strict', max_age=3600 * 12)
+        _admin_cookie(resp, token)
+        return resp
+
+    @app.get('/api/admin/session', dependencies=[Depends(admin)])
+    def admin_session():
+        return dict(ok=True)
+
+    @app.post('/api/admin/session')
+    def admin_sign_in(body: dict = Body(...)):
+        token = str(body.get('token', ''))
+        if not token or not secrets.compare_digest(token, admin_token):
+            raise HTTPException(401, '管理员令牌无效')
+        resp = JSONResponse(dict(ok=True))
+        _admin_cookie(resp, token)
+        return resp
+
+    @app.delete('/api/admin/session')
+    def admin_sign_out():
+        resp = JSONResponse(dict(ok=True))
+        resp.delete_cookie('el_admin')
         return resp
 
     @app.get('/api/admin/experiments', dependencies=[Depends(admin)])
@@ -159,9 +179,16 @@ def create_app(data_dir, admin_token):
                 select(db.enrollments.c.experiment_id, func.count())
                 .join(db.assignments, db.assignments.c.enrollment_id == db.enrollments.c.id)
                 .where(db.assignments.c.status == 'answered').group_by(db.enrollments.c.experiment_id)).all())
+            last = dict(conn.execute(
+                select(db.enrollments.c.experiment_id, func.max(db.events.c.server_ts))
+                .join(db.events, db.events.c.enrollment_id == db.enrollments.c.id)
+                .group_by(db.enrollments.c.experiment_id)).all())
+            coverage = {e.id: _coverage(conn, e.id, e.config['target_per_item']) for e in exps}
         return [dict(id=e.id, title=e.config['title'], template=e.template, status=e.status,
                      config_hash=e.config_hash, raters=counts.get(e.id, 0), answered=answered.get(e.id, 0),
-                     created_at=e.created_at.isoformat()) for e in exps]
+                     items=len(coverage[e.id]), target=e.config['target_per_item'],
+                     done=sum(min(n, e.config['target_per_item']) for n in coverage[e.id].values()),
+                     last_activity=_iso(last.get(e.id)), created_at=e.created_at.isoformat()) for e in exps]
 
     @app.get('/api/admin/experiments/{exp_id}', dependencies=[Depends(admin)])
     def experiment(exp_id: str):
@@ -171,8 +198,23 @@ def create_app(data_dir, admin_token):
                                       .group_by(db.items.c.kind)).all())
             invites = conn.execute(select(db.invites).where(db.invites.c.experiment_id == exp_id)
                                    .order_by(db.invites.c.created_at)).all()
+            enrolled = select(db.enrollments.c.id).where(db.enrollments.c.experiment_id == exp_id)
+            responses = (select(db.events.c.server_ts, db.events.c.enrollment_id)
+                         .join(db.assignments, db.assignments.c.id == db.events.c.assignment_id)
+                         .where(db.events.c.enrollment_id.in_(enrolled), db.events.c.type == 'response',
+                                db.assignments.c.role != 'practice'))
+            times = conn.execute(responses).all()
+            raters = conn.execute(select(func.count()).select_from(enrolled.subquery())).scalar()
+        daily = {}
+        for t in times:
+            day = _aware(t.server_ts).astimezone().date().isoformat()  # server's local calendar day
+            daily[day] = daily.get(day, 0) + 1
+        summary = dict(raters=raters, raters_started=len({t.enrollment_id for t in times}), responses=len(times),
+                       last_activity=_iso(max((t.server_ts for t in times), default=None)),
+                       daily=[dict(date=d, n=n) for d, n in sorted(daily.items())])
         return dict(id=e.id, status=e.status, template=e.template, config=e.config, config_hash=e.config_hash,
-                    code_version=e.code_version, items=kinds,
+                    code_version=e.code_version, items=kinds, summary=summary,
+                    created_at=e.created_at.isoformat(),
                     invites=[dict(url=f'/i/{i.token}', tier=i.tier, arm=i.arm, uses=i.uses, max_uses=i.max_uses,
                                   note=i.note) for i in invites])
 
@@ -184,11 +226,7 @@ def create_app(data_dir, admin_token):
             config = config_of(exp)
             items = conn.execute(select(db.items).where(db.items.c.experiment_id == exp_id,
                                                         db.items.c.kind == 'main')).all()
-            counts = dict(conn.execute(select(db.assignments.c.item_id, func.count())
-                                       .join(db.items, db.items.c.id == db.assignments.c.item_id)
-                                       .where(db.items.c.experiment_id == exp_id, db.assignments.c.role == 'normal',
-                                              db.assignments.c.status == 'answered')
-                                       .group_by(db.assignments.c.item_id)).all())
+            counts = _coverage(conn, exp_id)
         scenes = {}
         for it in items:
             s = scenes.setdefault(it.scene_id, dict(scene_id=it.scene_id, items=0, core=0, counts=[]))
@@ -302,6 +340,31 @@ def create_app(data_dir, admin_token):
         return FileResponse(target, headers={'Cache-Control': 'public, max-age=31536000, immutable'})
 
     return app
+
+
+def _coverage(conn, exp_id, target=None):
+    """Answered normal-role judgements per main item (items with none included as 0)."""
+    items = conn.execute(select(db.items.c.id).where(db.items.c.experiment_id == exp_id,
+                                                     db.items.c.kind == 'main')).scalars().all()
+    counts = dict(conn.execute(select(db.assignments.c.item_id, func.count())
+                               .join(db.items, db.items.c.id == db.assignments.c.item_id)
+                               .where(db.items.c.experiment_id == exp_id, db.items.c.kind == 'main',
+                                      db.assignments.c.role == 'normal', db.assignments.c.status == 'answered')
+                               .group_by(db.assignments.c.item_id)).all())
+    return {i: counts.get(i, 0) for i in items}
+
+
+def _admin_cookie(resp, token):
+    resp.set_cookie('el_admin', token, httponly=True, samesite='strict', max_age=3600 * 12)
+
+
+def _aware(ts):
+    """SQLite returns naive datetimes; everything is stored in UTC."""
+    return ts.replace(tzinfo=timezone.utc) if ts.tzinfo is None else ts
+
+
+def _iso(ts):
+    return _aware(ts).isoformat() if ts else None
 
 
 def _page_message(text):

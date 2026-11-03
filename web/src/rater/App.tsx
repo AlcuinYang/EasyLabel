@@ -46,7 +46,7 @@ function Experiment({ id }: { id: string }) {
     case 'practice_intro': return <PracticeIntro {...props} />
     case 'ready': return <Ready {...props} />
     case 'task': return <TaskFrame key={state.task!.token} {...props} />
-    case 'finished': return <Message title="已完成" text="你已完成本实验目前可分配的全部题目，谢谢参与。" code={state.completion_code} />
-    case 'closed': return <Message title="实验已关闭" text="该实验已停止收集数据，谢谢参与。" code={state.completion_code} />
+    case 'finished': return <Message state={state} title="全部完成，谢谢参与" text="本实验目前可分配给你的题目都已答完。" code={state.completion_code} />
+    case 'closed': return <Message state={state} title="实验已关闭" text="该实验已停止收集数据，谢谢参与。" code={state.completion_code} />
   }
 }

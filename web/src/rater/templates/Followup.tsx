@@ -3,7 +3,7 @@ import type { TemplateProps } from '../TaskFrame'
 import { PairImages } from './Pair'
 
 const LABELS: Record<string, string> = {
-  tone: '影调', color: '色彩', both: '两者都有', other: '其他（请写明）', cannot_tell: '看不出',
+  tone: '影调', color: '色彩', both: '两者都有', other: '其他', cannot_tell: '看不出',
 }
 
 export function Followup(props: TemplateProps & { ready: boolean }) {
@@ -27,18 +27,23 @@ export function Followup(props: TemplateProps & { ready: boolean }) {
   return (
     <>
       <PairImages {...props} />
-      <div className="answers">
-        {other === null ? choices.map((c, i) => (
-          <button key={c} disabled={!enabled}
-            onClick={() => (c === 'other' ? setOther('') : submit({ source: c }))}><kbd>{i + 1}</kbd>{LABELS[c] ?? c}</button>
-        )) : (
-          <form className="row" onSubmit={(e) => { e.preventDefault(); if (other.trim()) submit({ source: 'other', other_text: other }) }}>
-            <input type="text" autoFocus placeholder="差别来自哪里？" value={other} style={{ width: 360 }}
+      <div className="footer">
+        {other === null ? (
+          <div className="answers">
+            {choices.map((c, i) => (
+              <button key={c} className="answer" disabled={!enabled}
+                onClick={() => (c === 'other' ? setOther('') : submit({ source: c }))}>{LABELS[c] ?? c}<kbd>{i + 1}</kbd></button>
+            ))}
+          </div>
+        ) : (
+          <form className="other-form" onSubmit={(e) => { e.preventDefault(); if (other.trim()) submit({ source: 'other', other_text: other }) }}>
+            <input type="text" autoFocus placeholder="差别来自哪里？" value={other}
               onChange={(e) => setOther(e.target.value)} onKeyDown={(e) => e.stopPropagation()} />
-            <button className="primary" type="submit" disabled={!enabled || !other.trim()}>提交</button>
-            <button type="button" onClick={() => setOther(null)}>返回</button>
+            <button className="btn ghost" type="button" onClick={() => setOther(null)}>返回</button>
+            <button className="btn primary" type="submit" disabled={!enabled || !other.trim()}>提交</button>
           </form>
         )}
+        <div className="hint">这是你本块里判过的一对，左右位置和当时相同。</div>
       </div>
     </>
   )

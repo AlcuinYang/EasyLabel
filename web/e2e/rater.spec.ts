@@ -18,8 +18,8 @@ async function onboard(page: Page, exp: string, tier: 'lab' | 'remote' = 'remote
   await page.goto(await invite(page, exp, tier))
   await page.getByRole('button', { name: '同意并继续' }).click()
   await expect(page.getByRole('heading', { name: '基本信息' })).toBeVisible()
-  await expect(page.locator('select')).toHaveCount(4)
-  for (const select of await page.locator('select').all()) await select.selectOption({ index: 1 })
+  await expect(page.getByRole('radiogroup')).toHaveCount(4)
+  for (const group of await page.getByRole('radiogroup').all()) await group.getByRole('radio').nth(1).click()
   await page.getByRole('button', { name: '继续' }).click()
   await expect(page.getByRole('heading', { name: /近黑台阶/ })).toBeVisible()
   await page.getByRole('button', { name: '5 级' }).click()
@@ -32,20 +32,20 @@ test('pair: onboarding, practice feedback, exact-pixel images, undo and pause', 
   const page = await newRater(browser, { width: 1800, height: 1000 }, 2)
   await onboard(page, 'demo-e1')
   await page.getByRole('button', { name: '开始练习' }).click()
-  await expect(page.locator('.progress .label')).toContainText('练习 · 1/')
+  await expect(page.locator('.meter')).toHaveAttribute('aria-label', /^练习 第 1 题/)
   await page.screenshot({ path: `${SHOTS}/pair-practice.png` })
   await page.waitForTimeout(400)
   await page.keyboard.press('2')
-  await expect(page.locator('.feedback')).toContainText('参考答案')
+  await expect(page.locator('.toast')).toContainText('参考答案')
   // Finish practice.
-  while (await page.locator('.progress .label').textContent().then((t) => t?.startsWith('练习'))) {
+  while (await page.locator('.meter').getAttribute('aria-label').then((t) => t?.startsWith('练习'))) {
     await page.waitForTimeout(1000)
     await page.keyboard.press('1')
     await page.waitForTimeout(150)
     if (await page.getByRole('button', { name: '开始第 1 块' }).isVisible()) break
   }
   await page.getByRole('button', { name: '开始第 1 块' }).click()
-  await expect(page.locator('.progress .label')).toContainText('第 1 块 · 1/')
+  await expect(page.locator('.meter')).toHaveAttribute('aria-label', /^第 1 块 第 1 题/)
   const img = page.locator('.pair img').first()
   await expect(img).toBeVisible()
   await page.waitForTimeout(400)
@@ -56,9 +56,9 @@ test('pair: onboarding, practice feedback, exact-pixel images, undo and pause', 
   expect(geometry.natural).toBe(1440) // one image pixel per device pixel
   await page.screenshot({ path: `${SHOTS}/pair-task.png` })
   await page.keyboard.press('3')
-  await expect(page.locator('.progress .label')).toContainText('· 2/')
+  await expect(page.locator('.meter')).toHaveAttribute('aria-label', / 第 2 题/)
   await page.keyboard.press('Backspace')
-  await expect(page.locator('.progress .label')).toContainText('· 1/')
+  await expect(page.locator('.meter')).toHaveAttribute('aria-label', / 第 1 题/)
   await page.keyboard.press('Escape')
   await expect(page.getByRole('heading', { name: '已暂停' })).toBeVisible()
   await page.keyboard.press('Escape')
@@ -75,7 +75,7 @@ test('pair: window too small withholds the task', async ({ browser }) => {
   await expect(page.getByText('至少 1520 ×')).toBeVisible()
   await page.screenshot({ path: `${SHOTS}/too-small.png` })
   await page.keyboard.press('1')
-  await expect(page.locator('.progress .label')).toContainText('练习 · 1/') // keys are ignored while blocked
+  await expect(page.locator('.meter')).toHaveAttribute('aria-label', /^练习 第 1 题/) // keys are ignored while blocked
 })
 
 test('remote tier rejects fractional device pixel ratio', async ({ browser }) => {
@@ -109,7 +109,7 @@ test('grid: multi-select, none-exclusive, best within accepted, zoom', async ({ 
   await expect(page.locator('.tile.best')).toHaveCount(1)
   await page.screenshot({ path: `${SHOTS}/grid-best.png` })
   await page.keyboard.press('Enter')
-  await expect(page.locator('.progress .label')).toContainText('· 2/')
+  await expect(page.locator('.meter')).toHaveAttribute('aria-label', / 第 2 题/)
 })
 
 test('admin: list, progress heatmap, rater QC', async ({ page }) => {
@@ -119,9 +119,9 @@ test('admin: list, progress heatmap, rater QC', async ({ page }) => {
   await page.getByRole('link', { name: '演示 E1 · 成对比较' }).click()
   await expect(page.locator('.heat .cell').first()).toBeVisible()
   await page.screenshot({ path: `${SHOTS}/admin-progress.png`, fullPage: true })
-  await page.getByRole('button', { name: '评分者质控' }).click()
+  await page.getByRole('tab', { name: '评分者' }).click()
   await page.screenshot({ path: `${SHOTS}/admin-raters.png`, fullPage: true })
-  await page.getByRole('button', { name: '预览' }).click()
+  await page.getByRole('tab', { name: '预览' }).click()
   await expect(page.locator('.preview img').first()).toBeVisible()
 })
 
@@ -145,5 +145,5 @@ test('region: overall rating, click regions, type and direction', async ({ brows
   }
   await page.screenshot({ path: `${SHOTS}/region.png` })
   await page.getByRole('button', { name: '提交' }).click()
-  await expect(page.locator('.progress .label')).toContainText('· 2/')
+  await expect(page.locator('.meter')).toHaveAttribute('aria-label', / 第 2 题/)
 })

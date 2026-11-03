@@ -133,24 +133,36 @@ export function Region({ task, scale, enabled, submit, ready }: TemplateProps & 
           </div>
           <div className="panel">
             {step === 'overall' ? (
-              <p className="muted">先给整张图打分（数字键 1–{levels}）。</p>
+              <>
+                <p className="panel-note">第一步：先给整张图打分（{task.low_label} → {task.high_label}），用下方按钮或数字键 1–{levels}。</p>
+                <p className="panel-note">打分后再在图上点出需要改的区域。</p>
+              </>
             ) : (
               <>
-                <p className="muted">整图 {overall} 分。在图上点出最多 {maxRegions} 块需要改的区域，为每块选类型和方向；也可以选“全局 / 说不清位置”。</p>
-                <button disabled={!enabled} className={marks.some((m) => m.region === GLOBAL) ? 'selected' : ''}
-                  onClick={() => toggle(GLOBAL)}>全局 / 说不清位置</button>
+                <div className="overall-tag">整图 {overall} 分
+                  <button className="chip" disabled={!enabled} onClick={() => { setStep('overall'); setMarks([]) }}>重新打分</button></div>
+                <p className="panel-note">第二步：在图上点出最多 {maxRegions} 块需要改的区域，为每块选类型和方向。说不清在哪里就选“全局”。</p>
+                <button className={`chip ${marks.some((m) => m.region === GLOBAL) ? 'on' : ''}`} disabled={!enabled}
+                  onClick={() => toggle(GLOBAL)} style={{ justifySelf: 'start' }}>全局 / 说不清位置</button>
+                {marks.length === 0 && <div className="empty-marks">还没有选区域：点击左边图上的分块</div>}
                 {marks.map((m, k) => (
                   <div className="mark" key={m.region}>
-                    <div className="head"><span>{k + 1}. {m.region === GLOBAL ? '全局 / 说不清位置' : `区域 ${k + 1}`}</span>
-                      <button onClick={() => toggle(m.region)} style={{ padding: '2px 8px' }}>移除</button></div>
+                    <div className="head">
+                      <span><span className="num">{k + 1}</span>{m.region === GLOBAL ? '全局 / 说不清位置' : `区域 ${k + 1}`}</span>
+                      <button className="chip" onClick={() => toggle(m.region)}>移除</button>
+                    </div>
+                    <span className="label">问题类型</span>
                     <div className="chips">{(task.region_types ?? []).map((t) => (
-                      <button key={t} className={m.type === t ? 'on' : ''} onClick={() => update(k, { type: t })}>{TYPE_LABELS[t] ?? t}</button>
+                      <button key={t} className={`chip ${m.type === t ? 'on' : ''}`} onClick={() => update(k, { type: t })}>{TYPE_LABELS[t] ?? t}</button>
                     ))}</div>
                     {m.type && m.type !== 'unsure' && (
-                      <div className="chips">
-                        <button className={m.direction === 'down' ? 'on' : ''} onClick={() => update(k, { direction: 'down' })}>该拉低</button>
-                        <button className={m.direction === 'up' ? 'on' : ''} onClick={() => update(k, { direction: 'up' })}>该拉高</button>
-                      </div>
+                      <>
+                        <span className="label">方向</span>
+                        <div className="chips">
+                          <button className={`chip ${m.direction === 'down' ? 'on' : ''}`} onClick={() => update(k, { direction: 'down' })}>该拉低</button>
+                          <button className={`chip ${m.direction === 'up' ? 'on' : ''}`} onClick={() => update(k, { direction: 'up' })}>该拉高</button>
+                        </div>
+                      </>
                     )}
                     {m.type === 'other' && (
                       <input type="text" placeholder="请写明" value={m.other_text ?? ''}
@@ -163,20 +175,19 @@ export function Region({ task, scale, enabled, submit, ready }: TemplateProps & 
           </div>
         </div>
       </div>
-      <div className="answers">
+      <div className="footer">
         {step === 'overall' ? (
           <div className="scale">
-            <span className="muted">{task.low_label}</span>
+            <span className="end">{task.low_label}</span>
             {Array.from({ length: levels }, (_, i) => i + 1).map((n) => (
-              <button key={n} disabled={!enabled} onClick={() => { setOverall(n); setStep('regions') }}><kbd>{n}</kbd></button>
+              <button key={n} className="answer" disabled={!enabled} onClick={() => { setOverall(n); setStep('regions') }}>{n}</button>
             ))}
-            <span className="muted">{task.high_label}</span>
+            <span className="end">{task.high_label}</span>
           </div>
         ) : (
-          <>
-            <button disabled={!enabled} onClick={() => { setStep('overall'); setMarks([]) }}>重新打分</button>
-            <button className="primary" disabled={!enabled || !complete} onClick={send}><kbd>Enter</kbd>提交</button>
-          </>
+          <div className="answers">
+            <button className="btn primary lg" disabled={!enabled || !complete} onClick={send}>提交<kbd>Enter</kbd></button>
+          </div>
         )}
       </div>
     </>

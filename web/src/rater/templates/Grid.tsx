@@ -46,8 +46,8 @@ export function Grid({ task, scale, enabled, submit, log, ready }: TemplateProps
       <div className="stage">
         <div className={`grid ${ready ? '' : 'hidden'}`}>
           {task.images.map((im, i) => {
-            const cls = ['tile', step === 'accept' && accepted.includes(i) ? 'accepted' : '',
-              step === 'best' && best === i ? 'best' : '', step === 'best' && accepted.includes(i) ? 'accepted' : ''].join(' ')
+            const on = accepted.includes(i)
+            const cls = ['tile', on ? 'accepted' : '', step === 'best' && best === i ? 'best' : ''].join(' ')
             return (
               <div className={cls} key={im.slot}>
                 <div className="frame" style={{ width: cell.width, height: cell.height }}
@@ -55,33 +55,47 @@ export function Grid({ task, scale, enabled, submit, log, ready }: TemplateProps
                   <img src={im.main.src[scale]} width={im.main.css_width} height={im.main.css_height}
                     style={{ width: im.main.css_width, height: im.main.css_height }} draggable={false} alt="" />
                 </div>
-                {step === 'accept'
-                  ? <button disabled={!active} onClick={() => toggle(i)}><kbd>{i + 1}</kbd>{accepted.includes(i) ? '已达到 ✓' : '达到'}</button>
-                  : <button disabled={!active || !candidate(i)} onClick={() => setBest(i)}><kbd>{i + 1}</kbd>{best === i ? '最好 ✓' : '最好'}</button>}
+                {step === 'accept' ? (
+                  <button className="tile-pick" role="checkbox" aria-checked={on} disabled={!active} onClick={() => toggle(i)}>
+                    <kbd>{i + 1}</kbd><span className="box">✓</span>已达到
+                  </button>
+                ) : (
+                  <button className="tile-pick" role="radio" aria-checked={best === i} disabled={!active || !candidate(i)}
+                    onClick={() => setBest(i)}>
+                    <kbd>{i + 1}</kbd><span className="box round">●</span>最好
+                  </button>
+                )}
               </div>
             )
           })}
         </div>
       </div>
-      <div className="answers">
-        {step === 'accept' ? (
-          <>
-            <span className="muted" style={{ alignSelf: 'center' }}>勾选所有已达到应有样子的版本（可多选）；点图可放大</span>
-            <button disabled={!active} className={none ? 'selected' : ''} onClick={() => { setNone(!none); setAccepted([]) }}>
-              <kbd>0</kbd>{none ? '都没有 ✓' : '都没有'}
-            </button>
-            <button className="primary" disabled={!active || !canNext} onClick={() => setStep('best')}><kbd>Enter</kbd>下一步</button>
-          </>
-        ) : (
-          <>
-            <span className="muted" style={{ alignSelf: 'center' }}>再挑出最好的一张{accepted.length ? '（在已勾选的版本中）' : ''}</span>
-            <button disabled={!active} onClick={() => { setStep('accept'); setBest(null) }}><kbd>←</kbd>返回</button>
-            <button className="primary" disabled={!active || best === null} onClick={done}><kbd>Enter</kbd>提交</button>
-          </>
-        )}
+      <div className="footer">
+        <div className="answers">
+          {step === 'accept' ? (
+            <>
+              <button className={`btn lg ${none ? 'on' : ''}`} disabled={!active} aria-pressed={none}
+                onClick={() => { setNone(!none); setAccepted([]) }}><kbd>0</kbd>{none ? '✓ 都没有' : '都没有'}</button>
+              <button className="btn primary lg" disabled={!active || !canNext} onClick={() => setStep('best')}>下一步<kbd>Enter</kbd></button>
+            </>
+          ) : (
+            <>
+              <button className="btn lg" disabled={!active} onClick={() => { setStep('accept'); setBest(null) }}><kbd>←</kbd>返回</button>
+              <button className="btn primary lg" disabled={!active || best === null} onClick={done}>提交<kbd>Enter</kbd></button>
+            </>
+          )}
+        </div>
+        <div className="hint">
+          <span className="phase">
+            <span className={step === 'accept' ? 'now' : ''}>① 勾选所有已达到应有样子的版本（可多选）</span>
+            <span className={step === 'best' ? 'now' : ''}>② 再挑出最好的一张{accepted.length ? '（在已勾选的版本中）' : ''}</span>
+          </span>
+          <span>· 点图可放大</span>
+        </div>
       </div>
       {zoomed && zsize && (
         <div className="overlay zoom" onClick={() => setZoom(null)}>
+          <span className="zoom-hint">点击任意处或按 Esc 返回</span>
           <img src={zsize.src[scale]} width={zsize.css_width} height={zsize.css_height}
             style={{ width: zsize.css_width, height: zsize.css_height, maxWidth: 'none' }} draggable={false} alt="" />
         </div>

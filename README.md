@@ -74,6 +74,7 @@ easylabel stimgen-verify --stimuli stimuli.csv --root SRC      # 按 regen_recip
 python -m pytest -q                             # 后端与分析
 cd web && npm run typecheck && npm test         # 前端单元测试
 cd web && npm run e2e                           # Playwright 端到端（首次会生成演示数据）
+cd web && SHOTS_DIR=/tmp/shots npx playwright test screens   # 把评分端和管理端每个页面截图，供界面检查
 python tools/simulate.py --scenes 238 --raters 10   # 规模与采样策略模拟（已知真值）
 ```
 
